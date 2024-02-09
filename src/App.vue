@@ -39,12 +39,14 @@
                 icon="mdi-trash-can-outline"
                 size="small"
                 class="mr-2"
+                @click="deleteFile(item.id)"
               />
               <v-btn
                 variant="tonal"
                 color="primary"
                 icon="mdi-download-circle"
                 size="small"
+                @click="downloadFile(item.name, item.id)"
               />
             </td>
           </tr>
@@ -56,22 +58,53 @@
 </template>
 
 <script setup>
-import {ref} from 'vue';
+import {ref, watch} from 'vue';
+import axios from 'axios';
+import fileDownload from 'js-file-download';
 
-const file = ref();
+const file = ref([]);
+watch(file, (vl) => {
+  uploadFile(vl[0])
+})
 
-const files = [
-  {
-    name: 'IronMan.jpg',
-    created_at: '2024-01-02 20:20:00',
-  },
-  {
-    name: 'Icecream-sandwich.png',
-    created_at: '2024-01-10 15:20:00',
-  },
-  {
-    name: 'Wonderwoman.jpg',
-    created_at: '2024-01-07 10:20:00',
-  },
-]
+const files = ref([])
+function getFiles() {
+  axios
+    .get('http://localhost:8000/api/files')
+    .then((response) => {
+      files.value = response.data.data
+    })
+}
+getFiles()
+
+function deleteFile(id) {
+  axios
+    .delete(`http://localhost:8000/api/files/${id}`)
+    .then(() => {
+      getFiles()
+    })
+}
+
+function uploadFile(file) {
+  axios
+    .postForm('http://localhost:8000/api/files',
+      {
+        file
+      }
+    )
+    .then((response) => {
+      files.value.push(response.data.data)
+      file.value = []
+    })
+}
+
+function downloadFile(name, id) {
+  axios
+    .get(`http://localhost:8000/api/files/${id}`, {
+      responseType: 'blob',
+    })
+    .then((response) => {
+      fileDownload(response.data, name)
+    })
+}
 </script>
